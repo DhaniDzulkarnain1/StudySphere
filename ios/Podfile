@@ -1,0 +1,83 @@
+platform :ios, '15.0'
+$FirebaseSDKVersion = '10.24.0'
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release, 
+  'Release' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+  end
+  
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+flutter_ios_podfile_setup
+
+target 'Runner' do
+  # Tambahkan modular headers untuk pod tertentu
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'leveldb-library', :modular_headers => true
+  pod 'FirebaseCore', :modular_headers => true
+  pod 'FirebaseAppCheckInterop', :modular_headers => true
+  
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+    
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+      
+      # Hapus semua kemungkinan flag -G
+      ['OTHER_CFLAGS', 'OTHER_CPLUSPLUSFLAGS', 'OTHER_LDFLAGS'].each do |key|
+        if config.build_settings[key]
+          if config.build_settings[key].is_a?(String)
+            config.build_settings[key] = config.build_settings[key].gsub(/-G\s*/, '').gsub(/-G/, '')
+          elsif config.build_settings[key].is_a?(Array)
+            config.build_settings[key] = config.build_settings[key].map { |flag| flag.to_s.gsub(/-G\s*/, '').gsub(/-G/, '') }.reject(&:empty?)
+          end
+        end
+      end
+      
+      # Perbaiki xcconfig files
+      xcconfig_path = config.base_configuration_reference&.real_path
+      if xcconfig_path && File.exist?(xcconfig_path)
+        content = File.read(xcconfig_path)
+        content = content.gsub(/-G\s*/, '').gsub(/-G/, '')
+        File.write(xcconfig_path, content)
+      end
+    end
+  end
+  
+  # Perbaiki Flutter xcconfig files
+  ['Release', 'Debug', 'Profile'].each do |mode|
+    flutter_xcconfig_path = File.expand_path(File.join('..', 'Flutter', "#{mode}.xcconfig"), __FILE__)
+    if File.exist?(flutter_xcconfig_path)
+      content = File.read(flutter_xcconfig_path)
+      content = content.gsub(/-G\s*/, '').gsub(/-G/, '')
+      File.write(flutter_xcconfig_path, content)
+    end
+    
+    generated_xcconfig_path = File.expand_path(File.join('..', 'Flutter', "Generated#{mode == 'Release' ? '' : mode}.xcconfig"), __FILE__)
+    if File.exist?(generated_xcconfig_path)
+      content = File.read(generated_xcconfig_path)
+      content = content.gsub(/-G\s*/, '').gsub(/-G/, '')
+      File.write(generated_xcconfig_path, content)
+    end
+  end
+end
