@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import './login_screen.dart';  // Import halaman login
+import './login_screen.dart'; // Import halaman login
 import 'package:studysphere/app/theme/app_theme.dart';
+import 'package:studysphere/data/datasources/firebase_database_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -26,7 +27,6 @@ class RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Konstanta untuk konsistensi
     const double defaultPadding = 20.0;
     const double defaultSpacing = 15.0;
     const double defaultRadius = 20.0;
@@ -40,7 +40,6 @@ class RegisterScreenState extends State<RegisterScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        // Mengosongkan judul agar tidak ada title di AppBar
         title: const Text(''),
       ),
       body: SafeArea(
@@ -52,26 +51,23 @@ class RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Image
                 Container(
                   width: double.infinity,
                   height: 250,
-                  decoration: BoxDecoration(
-                    image: const DecorationImage(
+                  decoration: const BoxDecoration(
+                    image: DecorationImage(
                       image: AssetImage('assets/images/regis.png'),
                       fit: BoxFit.cover,
                     ),
-                    borderRadius: const BorderRadius.vertical(
+                    borderRadius: BorderRadius.vertical(
                       bottom: Radius.circular(30),
                     ),
                   ),
                 ),
-                
                 const SizedBox(height: defaultSpacing * 1.5),
-                
-                // Register Text
                 Padding(
-                  padding: const EdgeInsets.only(left: defaultPadding, bottom: defaultSpacing * 2),
+                  padding: const EdgeInsets.only(
+                      left: defaultPadding, bottom: defaultSpacing * 2),
                   child: Text(
                     "Register",
                     style: GoogleFonts.poppins(
@@ -81,16 +77,12 @@ class RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ),
-                
-                // Email Field
                 buildInputField(
                   context: context,
                   controller: _emailController,
                   hintText: "Masukkan email Anda",
                   labelText: "Email *",
                 ),
-                
-                // Password Field
                 buildInputField(
                   context: context,
                   controller: _passwordController,
@@ -98,29 +90,25 @@ class RegisterScreenState extends State<RegisterScreen> {
                   labelText: "Password *",
                   isPassword: true,
                 ),
-                
-                // Device Code Field
                 buildInputField(
                   context: context,
                   controller: _deviceCodeController,
                   hintText: "Masukkan kode perangkat",
                   labelText: "Kode Perangkat *",
                 ),
-                
-                // Register Button
                 Container(
                   width: double.infinity,
                   height: buttonHeight,
-                  margin: const EdgeInsets.symmetric(horizontal: defaultPadding, vertical: defaultSpacing * 2),
+                  margin: const EdgeInsets.symmetric(
+                      horizontal: defaultPadding,
+                      vertical: defaultSpacing * 2),
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Implementasi register
-                      _validateAndRegister();
-                    },
+                    onPressed: _validateAndRegister,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary400,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(defaultRadius * 2.5),
+                        borderRadius:
+                            BorderRadius.circular(defaultRadius * 2.5),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       elevation: 0,
@@ -135,8 +123,6 @@ class RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ),
-                
-                // Already have an account
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: defaultSpacing * 2),
@@ -152,7 +138,6 @@ class RegisterScreenState extends State<RegisterScreen> {
                         ),
                         GestureDetector(
                           onTap: () {
-                            // Navigasi ke halaman login dengan REPLACEMENT
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
                                 builder: (context) => const LoginScreen(),
@@ -187,13 +172,13 @@ class RegisterScreenState extends State<RegisterScreen> {
     required String labelText,
     bool isPassword = false,
   }) {
-    // Konstanta untuk konsistensi
     const double defaultPadding = 20.0;
     const double defaultSpacing = 15.0;
     const double defaultRadius = 20.0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: defaultPadding, vertical: defaultSpacing),
+      padding: const EdgeInsets.symmetric(
+          horizontal: defaultPadding, vertical: defaultSpacing),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -226,20 +211,25 @@ class RegisterScreenState extends State<RegisterScreen> {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(defaultRadius * 2.5),
-                borderSide: BorderSide(color: AppTheme.primary400, width: 1.5),
+                borderSide:
+                    BorderSide(color: AppTheme.primary400, width: 1.5),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(defaultRadius * 2.5),
-                borderSide: BorderSide(color: AppTheme.primary400, width: 1.5),
+                borderSide:
+                    BorderSide(color: AppTheme.primary400, width: 1.5),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(defaultRadius * 2.5),
-                borderSide: BorderSide(color: AppTheme.primary400, width: 1.5),
+                borderSide:
+                    BorderSide(color: AppTheme.primary400, width: 1.5),
               ),
               suffixIcon: isPassword
                   ? IconButton(
                       icon: Icon(
-                        _obscureText ? Icons.visibility_off : Icons.visibility,
+                        _obscureText
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                         color: Colors.grey,
                       ),
                       onPressed: () {
@@ -256,11 +246,12 @@ class RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  void _validateAndRegister() {
-    // Validasi input
-    if (_emailController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _deviceCodeController.text.isEmpty) {
+  void _validateAndRegister() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final deviceCode = _deviceCodeController.text.trim();
+
+    if (email.isEmpty || password.isEmpty || deviceCode.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -273,20 +264,40 @@ class RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    // Implementasi logika register
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Registrasi berhasil!',
-          style: GoogleFonts.poppins(),
+    try {
+      final userId = email.replaceAll(RegExp(r'[^\w]+'), '');
+
+      final dbService = FirebaseDatabaseService();
+      await dbService.addUser(
+        idPengguna: userId,
+        email: email,
+        password: password,
+        idPerangkat: deviceCode,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Registrasi berhasil!',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: AppTheme.primary500,
         ),
-        backgroundColor: AppTheme.primary500,
-      ),
-    );
-    
-    // Navigasi kembali ke halaman login
-    Future.delayed(Duration(seconds: 2), () {
-      Navigator.of(context).pop();
-    });
+      );
+
+      Future.delayed(const Duration(seconds: 2), () {
+        Navigator.of(context).pop();
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Gagal registrasi: $e',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
